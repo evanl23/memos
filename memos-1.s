@@ -57,7 +57,7 @@ mmap_ent = 0x8000             # the number of entries will be stored at 0x8000
 	    movl $24, %ecx  		# ask for 24 bytes again
 	    int $0x15
         jc .e820f		# carry set means "end of list already reached"
-        movl $0x0534D4150, edx	# repair potentially trashed register
+        movl $0x0534D4150, %edx	# repair potentially trashed register
 
 .jmpin:
         jcxz .skipent		# skip any 0 length entries
