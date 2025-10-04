@@ -38,7 +38,7 @@ do_e820:
     xor %ebx, %ebx		# ebx must be 0 to start
     xor %bp, %bp		# keep an entry count in bp
       movl $0x534D4150, %edx # place "smap" into edx
-      movw, $0xE820, %eax
+      mov $0xE820, %eax
       mov dword 1, [%es:%di + 20] # force a valid ACPI 3.x entry
       movb $24, %ecx # ask for 24 bytes 
       INT 0x15
@@ -52,7 +52,7 @@ do_e820:
 	    jmp .jmpin
 
 .e820lp:
-        movw $0xe820, %eax		# eax, ecx get trashed on every int 0x15 call
+        mov $0xe820, %eax		# eax, ecx get trashed on every int 0x15 call
         mov [es:di + 20], dword 1	# force a valid ACPI 3.X entry
 	    mov ecx, 24		; ask for 24 bytes again
 	    int 0x15
@@ -78,7 +78,7 @@ do_e820:
 	    jne .e820lp
 
 .e820f:
-        mov %bp, [%es:$mmap_ent] # store the entry count
+        movw %bp, %es:mmap_ent # store the entry count
         clc			# there is "jc" on end of list to this point, so the carry must be cleared
 	    ret
 .failed:
