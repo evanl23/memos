@@ -9,7 +9,28 @@ _start:
 
 # detecting memory
 # result is stored in memory at ES:DI
-      # physical address = ES << 4 + DI
+
+
+# Call E820 memory detection
+    call do_e820
+
+	movw 0x8000, %ax   # load entry count
+	movb %ah, %al      # move high byte into AL
+	call print         # prints high byte
+
+	movw 0x8000, %ax   # reload AX from memory
+	call print         # prints low byte (AL)
+
+
+# Print newline (CR + LF)
+    movb $0x0E, %ah
+    movb $0x0D, %al         # carriage return
+    int  $0x10
+    movb $0x0A, %al         # line feed
+    int  $0x10
+
+hang:
+    jmp hang
 
 mmap_ent equ 0x8000             ; the number of entries will be stored at 0x8000
 do_e820:
@@ -63,6 +84,35 @@ do_e820:
 .failed:
 	    stc			; "function unsupported" error exit
 	    ret
+
+
+print:
+    pushw %dx
+    movb %al, %dl
+    shrb $4, %al
+    cmpb $10, %al
+    jge 1f
+    addb $0x30, %al
+    jmp 2f
+1:  addb $55, %al
+2:  movb $0x0E, %ah
+    movw $0x07, %bx
+    int $0x10
+
+    movb %dl, %al
+    andb $0x0f, %al
+    cmpb $10, %al
+    jge 1f
+    addb $0x30, %al
+    jmp 2f
+1:  addb $55, %al
+2:  movb $0x0E, %ah
+    movw $0x07, %bx
+    int $0x10
+    popw %dx
+    ret
+
+
 
       .org 0x1FE
       .byte 0x55
