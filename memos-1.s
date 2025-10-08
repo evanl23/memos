@@ -33,10 +33,29 @@ _start:
     movw $0x8004, %si     # SI = start of entries
 
 print_loop:
-    movl 16(%si), %eax    # load type 
-    call print            # print type 
+    # Print base address (32-bit) - print all 4 bytes
+    movl 0(%si), %eax     # load base address
+    call print_dword      # print all 4 bytes
     
-    # newline after each type
+    # Print space separator
+    movb $0x0E, %ah
+    movb $0x20, %al       # space character
+    int  $0x10
+    
+    # Print length (32-bit) - print all 4 bytes
+    movl 8(%si), %eax     # load length
+    call print_dword      # print all 4 bytes
+    
+    # Print space separator
+    movb $0x0E, %ah
+    movb $0x20, %al       # space character
+    int  $0x10
+    
+    # Print type
+    movl 16(%si), %eax    # load type 
+    call print            # print type (just 1 byte)
+    
+    # newline after each entry
     movb $0x0E, %ah
     movb $0x0D, %al
     int  $0x10
@@ -127,6 +146,35 @@ print:
     movw $0x07, %bx
     int $0x10
     popw %dx
+    ret
+
+# Print 32-bit value in EAX as 8 hex digits
+print_dword:
+    pushl %eax            # save original value
+    
+    # Print byte 3 (most significant - bits 31-24)
+    shrl $24, %eax        # shift right 24 bits to get top byte
+    call print            # print top byte
+    
+    popl %eax             # restore original value
+    pushl %eax            # save it again
+    
+    # Print byte 2 (bits 23-16)
+    shrl $16, %eax        # shift right 16 bits
+    call print            # print byte 2
+    
+    popl %eax             # restore original value  
+    pushl %eax            # save it again
+    
+    # Print byte 1 (bits 15-8)
+    shrl $8, %eax         # shift right 8 bits
+    call print            # print byte 1
+    
+    popl %eax             # restore original value
+    
+    # Print byte 0 (bits 7-0) 
+    call print            # print lowest byte
+    
     ret
 
 
