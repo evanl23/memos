@@ -33,28 +33,21 @@ _start:
     movw $0x8004, %si     # SI = start of entries
 
 print_loop:
-    # Print base address HIGH 32 bits first
-    movl 4(%si), %eax     # load HIGH 32 bits of base address
-    call print_dword      # print high 32 bits
+    # Print base address (32-bit low part only)
+    movl 0(%si), %eax     # load 32 bits of base address
+    call print_dword      # print base address
     
-    # Print base address LOW 32 bits
-    movl 0(%si), %eax     # load LOW 32 bits of base address
-    movl %eax, %ebx       # store base address (low part)
-    call print_dword      # print low 32 bits
-    
-    # Print space separator
     movb $0x0E, %ah
-    movb $0x20, %al       # space character
+    movb $0x3A, %al       # print colon ":" 
     int  $0x10
     
-    # Print length HIGH 32 bits
-    movl 12(%si), %eax    # load HIGH 32 bits of length
-    call print_dword      # print high 32 bits
-    
-    # Print length LOW 32 bits  
-    movl 8(%si), %eax     # load LOW 32 bits of length
-    call print_dword      # print low 32 bits
-    
+    # Calculate end address: base + length - 1
+    movl 0(%si), %eax     # reload base address
+    movl 8(%si), %edx     # load length into EDX
+    addl %edx, %eax       # add length to base
+    subl $1, %eax         # subtract 1 to get last valid address
+    call print_dword      # print end address
+
     # Print space separator
     movb $0x0E, %ah
     movb $0x20, %al       # space character
