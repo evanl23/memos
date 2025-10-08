@@ -29,6 +29,23 @@ _start:
     movb $0x0A, %al         # line feed
     int  $0x10
 
+    movw 0x8000, %cx      # CX = entry count
+    movw $0x8004, %si     # SI = start of entries
+
+print_loop:
+    movl 16(%si), %eax    # load type 
+    call print            # print type 
+    
+    # newline after each type
+    movb $0x0E, %ah
+    movb $0x0D, %al
+    int  $0x10
+    movb $0x0A, %al
+    int  $0x10
+
+    addw $24, %si         # next entry 
+    loop print_loop
+
 hang:
     jmp hang
 
