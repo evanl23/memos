@@ -1,11 +1,11 @@
-      .global _start
-      .code16
+.global _start
+.code16
 
 _start:
 
 # set video mode	
-	    movw $0x0003, %ax
-	    int $0x10
+    movw $0x0003, %ax
+    int $0x10
 
 # detecting memory
 # result is stored in memory at ES:DI
@@ -14,12 +14,12 @@ _start:
 # Call E820 memory detection
     call do_e820
 
-	movw 0x8000, %ax   # load entry count
-	movb %ah, %al      # move high byte into AL
-	call print         # prints high byte
-
-	movw 0x8000, %ax   # reload AX from memory
-	call print         # prints low byte (AL)
+    movw 0x8000, %ax   # load entry count
+    movb %ah, %al      # move high byte into AL
+    call print         # prints high byte
+    
+    movw 0x8000, %ax   # reload AX from memory
+    call print         # prints low byte (AL)
 
 
 # Print newline (CR + LF)
@@ -33,18 +33,27 @@ _start:
     movw $0x8004, %si     # SI = start of entries
 
 print_loop:
-    # Print base address (32-bit) - print all 4 bytes
-    movl 0(%si), %eax     # load base address
-    call print_dword      # print all 4 bytes
+    # Print base address HIGH 32 bits first
+    movl 4(%si), %eax     # load HIGH 32 bits of base address
+    call print_dword      # print high 32 bits
+    
+    # Print base address LOW 32 bits
+    movl 0(%si), %eax     # load LOW 32 bits of base address
+    movl %eax, %ebx       # store base address (low part)
+    call print_dword      # print low 32 bits
     
     # Print space separator
     movb $0x0E, %ah
     movb $0x20, %al       # space character
     int  $0x10
     
-    # Print length (32-bit) - print all 4 bytes
-    movl 8(%si), %eax     # load length
-    call print_dword      # print all 4 bytes
+    # Print length HIGH 32 bits
+    movl 12(%si), %eax    # load HIGH 32 bits of length
+    call print_dword      # print high 32 bits
+    
+    # Print length LOW 32 bits  
+    movl 8(%si), %eax     # load LOW 32 bits of length
+    call print_dword      # print low 32 bits
     
     # Print space separator
     movb $0x0E, %ah
@@ -68,39 +77,40 @@ print_loop:
 hang:
     jmp hang
 
-mmap_ent = 0x8000             # the number of entries will be stored at 0x8000
-	do_e820:
-		movw $0x8004, %di # Set di to 0x8004. Otherwise this code will get stuck in `int 0x15` after some entries are fetched 
-		xor %ebx, %ebx		# ebx must be 0 to start
-		xor %bp, %bp		# keep an entry count in bp
-		movl $0x534D4150, %edx # place "smap" into edx
-		movl $0xE820, %eax
-		movl $1, %es:20(%di) # force a valid ACPI 3.x entry
-		movl $24, %ecx # ask for 24 bytes 
-		int $0x15
+    mmap_ent = 0x8000             # the number of entries will be stored at x8000
+
+do_e820:
+    movw $0x8004, %di # Set di to 0x8004. Otherwise this code will get stuck in `int 0x15` after some entries are fetched 
+    xor %ebx, %ebx		# ebx must be 0 to start
+    xor %bp, %bp		# keep an entry count in bp
+    movl $0x534D4150, %edx # place "smap" into edx
+    movl $0xE820, %eax
+    movl $1, %es:20(%di) # force a valid ACPI 3.x entry
+    movl $24, %ecx # ask for 24 bytes 
+    int $0x15
 
     jc .failed	# carry set on first call means "unsupported function"
-        movl $0x0534D4150, %edx	# Some BIOSes apparently trash this register?
-        cmp %edx, %eax # on success, eax must have been reset to "SMAP"
-	    jne .failed
-        test %ebx, %ebx		# ebx = 0 implies list is only 1 entry long (worthless)
-	    je .failed
-	    jmp .jmpin
+    movl $0x0534D4150, %edx	# Some BIOSes apparently trash this register?
+    cmp %edx, %eax # on success, eax must have been reset to "SMAP"
+    jne .failed
+    test %ebx, %ebx		# ebx = 0 implies list is only 1 entry long (worthless)
+    je .failed
+    jmp .jmpin
 
 .e820lp:
-        mov $0xe820, %eax		# eax, ecx get trashed on every int 0x15 call
-        movl $1, %es:20(%di)	# force a valid ACPI 3.X entry
-	    movl $24, %ecx  		# ask for 24 bytes again
-	    int $0x15
-        jc .e820f		# carry set means "end of list already reached"
-        movl $0x0534D4150, %edx	# repair potentially trashed register
+    mov $0xe820, %eax		# eax, ecx get trashed on every int 0x15 call
+    movl $1, %es:20(%di)	# force a valid ACPI 3.X entry
+    movl $24, %ecx  		# ask for 24 bytes again
+    int $0x15
+    jc .e820f		# carry set means "end of list already reached"
+    movl $0x0534D4150, %edx	# repair potentially trashed register
 
 .jmpin:
-        jcxz .skipent		# skip any 0 length entries
-        cmp $20, %cl	# got a 24 byte ACPI 3.X response?
-	    jbe .notext
-        testb $1, %es:20(%di) # if so: is the "ignore this data" bit clear?
-	    je .skipent
+    jcxz .skipent		# skip any 0 length entries
+    cmp $20, %cl	# got a 24 byte ACPI 3.X response?
+    jbe .notext
+    testb $1, %es:20(%di) # if so: is the "ignore this data" bit clear?
+    je .skipent
 
 .notext:
     movl %es:8(%di), %ecx # get lower uint32_t of memory region length
@@ -110,16 +120,17 @@ mmap_ent = 0x8000             # the number of entries will be stored at 0x8000
     addw $24, %di
 
 .skipent:
-        test %ebx, %ebx		# if ebx resets to 0, list is complete
-	    jne .e820lp
+    test %ebx, %ebx		# if ebx resets to 0, list is complete
+    jne .e820lp
 
 .e820f:
-        movw %bp, %es:mmap_ent # store the entry count
-        clc			# there is "jc" on end of list to this point, so the carry must be cleared
-	    ret
+    movw %bp, %es:mmap_ent # store the entry count
+    clc			# there is "jc" on end of list to this point, so the carry must be cleared
+	  ret
+
 .failed:
-        stc			# "function unsupported" error exit
-	    ret
+    stc			# "function unsupported" error exit
+    ret
 
 
 print:
@@ -179,6 +190,6 @@ print_dword:
 
 
 
-      .org 0x1FE
-      .byte 0x55
-      .byte 0xAA
+    .org 0x1FE
+    .byte 0x55
+    .byte 0xAA
