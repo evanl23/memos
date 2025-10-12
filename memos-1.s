@@ -9,10 +9,12 @@ _start:
 
 # detecting memory
 # result is stored in memory at ES:DI
-
-
 # Call E820 memory detection
     call do_e820
+
+# print welcome message 
+    movw $welcome_string, %di     # point DI to string (not SI)
+    call print_string
 
     movw 0x8000, %ax   # load entry count
     movb %ah, %al      # move high byte into AL
@@ -20,7 +22,6 @@ _start:
     
     movw 0x8000, %ax   # reload AX from memory
     call print         # prints low byte (AL)
-
 
 # Print newline (CR + LF)
     movb $0x0E, %ah
@@ -33,10 +34,14 @@ _start:
     movw $0x8004, %si     # SI = start of entries
 
 print_loop:
+    # print address range
+    movw $address_string, %di
+    call print_string
+
     # Print base address (32-bit low part only)
     movl 0(%si), %eax     # load 32 bits of base address
     call print_dword      # print base address
-    
+   
     movb $0x0E, %ah
     movb $0x3A, %al       # print colon ":" 
     int  $0x10
@@ -48,10 +53,9 @@ print_loop:
     subl $1, %eax         # subtract 1 to get last valid address
     call print_dword      # print end address
 
-    # Print space separator
-    movb $0x0E, %ah
-    movb $0x20, %al       # space character
-    int  $0x10
+    # print status
+    movw $status_string, %di 
+    call print_string
     
     # Print type
     movl 16(%si), %eax    # load type 
@@ -181,7 +185,24 @@ print_dword:
     
     ret
 
+print_string:
+    pusha                # save all registers
+    movb $0x0E, %ah      # BIOS teletype function
+    movw $0x07, %bx      # page/color attributes
+1:
+    movb (%di), %al      # load byte from [DI] into AL
+    test %al, %al        # check if null terminator
+    jz 2f                # jump if zero (end of string)
+    int $0x10            # print character
+    incw %di             # increment DI manually
+    jmp 1b               # loop back
+2:
+    popa                 # restore all registers
+    ret
 
+welcome_string: .asciz "MemOS: Welcome *** System Memory is: " 
+address_string: .asciz "Address range ["
+status_string: .asciz "] status: "
 
     .org 0x1FE
     .byte 0x55
