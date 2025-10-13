@@ -12,16 +12,39 @@ _start:
 # Call E820 memory detection
     call do_e820
 
+    movw 0x8000, %cx      # CX = entry count
+    movw $0x8004, %si     # SI = start of entries
+
 # print welcome message 
-    movw $welcome_string, %di     # point DI to string (not SI)
+    movw $welcome_string, %di     # point DI to string 
     call print_string
 
-    movw 0x8000, %ax   # load entry count
-    movb %ah, %al      # move high byte into AL
-    call print         # prints high byte
-    
-    movw 0x8000, %ax   # reload AX from memory
-    call print         # prints low byte (AL)
+# loop over all address ranges and accumulate them
+    pushw %si       # save state of si 
+    xor %edx, %edx      # clear edx
+total_mem_loop:
+    movl 16(%si), %eax
+    cmpl $1, %eax       # check if memory type is type 1 (usable)
+    jne next_entry
+
+    movl 8(%si), %eax
+    addl %eax, %edx
+
+next_entry:    
+    addw $24, %si       # move on to next entry
+    loop total_mem_loop
+
+    popw %si
+
+# print total memory 
+    movl %edx, %eax
+    shrl $20, %eax        # shift right 20 bits to convert bytes to MB
+    call print
+    movb $0x0E, %ah
+    movb $0x4D, %al
+    int $0x10
+    movb $0x42, %al
+    int $0x10
 
 # Print newline (CR + LF)
     movb $0x0E, %ah
@@ -30,9 +53,7 @@ _start:
     movb $0x0A, %al         # line feed
     int  $0x10
 
-    movw 0x8000, %cx      # CX = entry count
-    movw $0x8004, %si     # SI = start of entries
-
+    movw 0x8000, %cx      # Reload entry count for second loop
 print_loop:
     # print address range
     movw $address_string, %di
