@@ -1,14 +1,28 @@
-# memos
-Master boot record code that probes the upper memory of an x86 machine
+# MemOS
+Marcus Izumi, Evan Liu
+
+Master boot record code that probes the system BIOS of a x86 machine and prints the available memory to the screen. Written for [Richard West](https://www.cs.bu.edu/fac/richwest/)'s CS552 class. 
+
+There are two versions, ```memos-1``` probes the machine's memory in Real-Mode while ```memos-2``` probes in Protected-Mode. 
 
 
-Inside the directory, run:
+## MemOS-1
 
-make clean && make && make run
+To assemble and link the program, navigate inside the directory and run:
 
+```
+make all1 
+```
 
-If address is already in use, run 
+To boot the binary in qemu, run:
+```
+make run1
+```
 
+If address is already in use, run: 
+```
 killall qemu-system-i386
+```
 
-And free up the address
+
+## MemOs-2
