@@ -39,7 +39,7 @@ next_entry:
 # print total memory 
     movl %edx, %eax
     shrl $20, %eax        # shift right 20 bits to convert bytes to MB
-    call print
+    call print_decimal
     movb $0x0E, %ah
     movb $0x4D, %al
     int $0x10
@@ -144,7 +144,7 @@ do_e820:
 .e820f:
     movw %bp, %es:mmap_ent # store the entry count
     clc			# there is "jc" on end of list to this point, so the carry must be cleared
-	  ret
+    ret
 
 .failed:
     stc			# "function unsupported" error exit
@@ -206,6 +206,44 @@ print_dword:
     
     ret
 
+# print decimal
+print_decimal:
+    pushl %eax
+    pushl %ebx
+    pushl %ecx
+    pushl %edx
+    
+    # Handle zero
+    test %eax, %eax
+    jnz 1f
+    movb $'0', %al
+    movb $0x0E, %ah
+    int $0x10
+    jmp 3f
+    
+1:  movl $10, %ebx      # divisor
+    xorl %ecx, %ecx     # clear digit counter
+    
+2:  xorl %edx, %edx     # clear remainder
+    divl %ebx           # divide by 10
+    pushl %edx          # save digit
+    incl %ecx           # count digits
+    test %eax, %eax     # more digits?
+    jnz 2b
+    
+    # Print digits from stack
+4:  popl %eax
+    addb $'0', %al      # convert to ASCII
+    movb $0x0E, %ah
+    int $0x10
+    loop 4b
+    
+3:  popl %edx
+    popl %ecx
+    popl %ebx
+    popl %eax
+    ret
+
 print_string:
     pusha                # save all registers
     movb $0x0E, %ah      # BIOS teletype function
@@ -223,8 +261,8 @@ print_string:
 
 welcome_string: .asciz "MemOS: Welcome *** System Memory is: " 
 address_string: .asciz "Address range ["
-status_string: .asciz "] status: "
+status_string: .asciz "] status: Type "
 
-    .org 0x1FE
+    .org 0x1FE      # declares previous code must be 510 bytes 
     .byte 0x55
     .byte 0xAA
