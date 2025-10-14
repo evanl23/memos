@@ -19,41 +19,38 @@ _start:
     movw $welcome_string, %di     # point DI to string 
     call print_string
 
-# loop over all address ranges and accumulate them
-    pushw %si       # save state of si 
-    xor %edx, %edx      # clear edx
+# First pass: accumulate total memory only
+    xor %edx, %edx      # clear edx for total memory
 total_mem_loop:
     movl 16(%si), %eax
     cmpl $1, %eax       # check if memory type is type 1 (usable)
-    jne next_entry
+    jne next_entry 
+    
+    addl 8(%si), %edx   # add length directly to total
 
-    movl 8(%si), %eax
-    addl %eax, %edx
-
-next_entry:    
-    addw $24, %si       # move on to next entry
+next_entry:
+    addw $24, %si       # next entry
     loop total_mem_loop
-
-    popw %si
 
 # print total memory 
     movl %edx, %eax
     shrl $20, %eax        # shift right 20 bits to convert bytes to MB
     call print_decimal
     movb $0x0E, %ah
-    movb $0x4D, %al
+    movb $0x4D, %al       # 'M'
     int $0x10
-    movb $0x42, %al
+    movb $0x42, %al       # 'B'
     int $0x10
 
-# Print newline (CR + LF)
+# Print newline
     movb $0x0E, %ah
-    movb $0x0D, %al         # carriage return
-    int  $0x10
-    movb $0x0A, %al         # line feed
-    int  $0x10
+    movb $0x0D, %al       # carriage return
+    int $0x10
+    movb $0x0A, %al       # line feed
+    int $0x10
 
-    movw 0x8000, %cx      # Reload entry count for second loop
+    movw 0x8000, %cx      # reload entry count
+    movw $0x8004, %si     # reset to start of entries
 print_loop:
     # print address range
     movw $address_string, %di
@@ -69,8 +66,7 @@ print_loop:
     
     # Calculate end address: base + length - 1
     movl 0(%si), %eax     # reload base address
-    movl 8(%si), %edx     # load length into EDX
-    addl %edx, %eax       # add length to base
+    addl 8(%si), %eax     # add length to base
     subl $1, %eax         # subtract 1 to get last valid address
     call print_dword      # print end address
 
@@ -89,7 +85,7 @@ print_loop:
     movb $0x0A, %al
     int  $0x10
 
-    addw $24, %si         # next entry 
+    addw $24, %si         # next entry
     loop print_loop
 
 hang:
