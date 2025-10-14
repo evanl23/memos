@@ -1,0 +1,4 @@
+# to place into /mnt/C/boot/grub/ on our virtual disk 
+title MemOS
+root (hd0,0)
+kernel /boot/memos-2
