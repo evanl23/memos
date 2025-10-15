@@ -1,3 +1,6 @@
+.text
+
+.globl _start
 _start:
     jmp real_start
 
@@ -9,6 +12,12 @@ _start:
     .long 0xE4524FFB /* Checksum */
 
 real_start:
+    /* Setup proper stack */
+    mov %stack_top, %esp
+    mov %esp, %ebp
+    /* pass arguments to _main */
     pushl %eax
     pushl %ebx
-    call _main 
+    
+    call _main
+    hlt
