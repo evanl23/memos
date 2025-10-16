@@ -13,6 +13,9 @@ FILE_LICENCE ( GPL2_OR_LATER );
 
 #include <stdint.h>
 
+/* Define multiboot_uint32_t for compatibility */
+typedef uint32_t multiboot_uint32_t;
+
 /** The magic number for the Multiboot header */
 #define MULTIBOOT_HEADER_MAGIC 0x1BADB002
 

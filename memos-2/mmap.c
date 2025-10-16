@@ -49,13 +49,13 @@ void put_uint64(uint64_t num) {
         num /= 10;
     }
     while (k--)
-        putc(buf[i]);
+        putc(buf[k]);
 }
 
 void put_hex64(uint64_t num) {
     char hex_digits[] = "0123456789ABCDEF";
     for (int j = 60; j >= 0; j -= 4) {
-        putchar(hex_digits[(num >> j) & 0xF]);
+        putc(hex_digits[(num >> j) & 0xF]);
     }
 }
 
@@ -64,12 +64,14 @@ void _main(multiboot_info_t* mbd, uint32_t magic)
 {
     /* Make sure the magic number matches for memory mapping*/
     if(magic != MULTIBOOT_BOOTLOADER_MAGIC) {
-        panic("invalid magic number!");
+        puts ("PANIC: invalid magic number!");
+        return;
     }
 
     /* Check bit 6 to see if we have a valid memory map */
     if(!(mbd->flags >> 6 & 0x1)) {
-        panic("invalid memory map given by GRUB bootloader");
+        puts ("PANIC: invalid memory map given by GRUB bootloader");
+        return;
     }
 
     /* Loop thorugh memory map accumulate total available mememory */
@@ -85,7 +87,7 @@ void _main(multiboot_info_t* mbd, uint32_t magic)
 
     /* Print to screen */
     puts ("MemOS: Welcome *** Total free memory: ");
-    put_uint64 (total);
+    put_uint64 (total / (1024 * 1024)); /* Convert bytes to MB */
     puts ("MB\n");
 
     /* Loop through the memory map and display the values */
@@ -102,7 +104,7 @@ void _main(multiboot_info_t* mbd, uint32_t magic)
         uint64_t addr_stop = addr_start + length - 1; 
         puts ("Address range [ 0x");
         put_hex64 (addr_start);
-        putc (': 0x');
+        puts (" : 0x");
         put_hex64 (addr_stop);
         puts ("] status: Type ");
         put_uint64 (mmmt->type);
