@@ -1,5 +1,5 @@
-#include "multiboot.h"  // TODO: ensure this is the right multiboot.h
-#include <stdint.h>     // for uint64_t
+#include "multiboot.h"   
+#include "stdint.h"     // for uint64_t
 
 /* Custom strlen since no external libraries */
 int my_strlen(const char* text) {
@@ -38,8 +38,8 @@ void puts (char *text) {
     }
 }
 
-void put_uint64(uint64_t num) {
-    char buf[21]; // 20 digits max for 64-bit integer + '\0'
+void put_uint32(uint32_t num) {
+    char buf[11]; // 10 digits max for 32-bit integer + '\0'
     int k = 0;
     if (num == 0) {
         putc('0');
@@ -51,6 +51,28 @@ void put_uint64(uint64_t num) {
     }
     while (k--)
         putc(buf[k]);
+}
+
+void put_uint64(uint64_t num) {
+    uint32_t high = (uint32_t)(num >> 32);
+    uint32_t low = (uint32_t)num;
+    
+    if (high != 0) {
+        put_uint32(high);
+        // Print low part with leading zeros if needed
+        char buf[11];
+        int k = 0;
+        uint32_t temp = low;
+        int i;
+        for (i = 0; i < 10; i++) {
+            buf[k++] = '0' + (temp % 10);
+            temp /= 10;
+            if (temp == 0 && i >= 8) break; // At least 9 digits for low part when high exists
+        }
+        while (k--) putc(buf[k]);
+    } else {
+        put_uint32(low);
+    }
 }
 
 void put_hex64(uint64_t num) {
