@@ -1,12 +1,10 @@
 ## MemOS 2
 
-Evan Liu (U12686999) Marcus Izumi (U53686318)
-
 MemOS 2 produces actual kernel code that probes and prints memory mappings. The probing is done by utilizing a struct that GRUB loads when booting. Thus, we create a disk image and boot our OS using GRUB. 
 
 ### Disk Configuration
 * Byte size: 512
-* Cylinders: 10 + 99 (last two digits of Liu's BUID) = 109 
+* Cylinders: 109 
 * Heads: 16
 * Sectors: 63
 
