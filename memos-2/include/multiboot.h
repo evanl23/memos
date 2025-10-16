@@ -9,9 +9,9 @@
  *
  */
 
-FILE_LICENCE ( GPL2_OR_LATER );
+// FILE_LICENCE ( GPL2_OR_LATER );
 
-#include <stdint.h>
+#include "stdint.h"
 
 /* Define multiboot_uint32_t for compatibility */
 typedef uint32_t multiboot_uint32_t;
