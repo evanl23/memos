@@ -1,4 +1,5 @@
-#include "multiboot.h" // TODO: ensure this is the right multiboot.h
+#include "multiboot.h"  // TODO: ensure this is the right multiboot.h
+#include <stdint.h>     // for uint64_t
 
 /* Custom strlen since no external libraries */
 int my_strlen(char* text) {
@@ -36,9 +37,32 @@ void puts (char *text) {
     }
 }
 
+void put_uint64(uint64_t num) {
+    char buf[21]; // 20 digits max for 64-bit integer + '\0'
+    int k = 0;
+    if (num == 0) {
+        putc('0');
+        return;
+    }
+    while (num > 0) {
+        buf[k++] = '0' + (num % 10);
+        num /= 10;
+    }
+    while (k--)
+        putc(buf[i]);
+}
+
+void put_hex64(uint64_t num) {
+    char hex_digits[] = "0123456789ABCDEF";
+    for (int j = 60; j >= 0; j -= 4) {
+        putchar(hex_digits[(num >> j) & 0xF]);
+    }
+}
+
+/* main program */ 
 void _main(multiboot_info_t* mbd, uint32_t magic)
 {
-  /* Make sure the magic number matches for memory mapping*/
+    /* Make sure the magic number matches for memory mapping*/
     if(magic != MULTIBOOT_BOOTLOADER_MAGIC) {
         panic("invalid magic number!");
     }
@@ -49,36 +73,39 @@ void _main(multiboot_info_t* mbd, uint32_t magic)
     }
 
     /* Loop thorugh memory map accumulate total available mememory */
-    long total;
+    uint64_t total;
     int i; 
     for (i = 0; i < mbd->mmap_length; i += sizeof(multiboot_memory_map_t)) {
         multiboot_memory_map_t* mmmt = (multiboot_memory_map_t *) (mbd->mmap_addr + i);
 
         if (mmmt->type == MULTIBOOT_MEMORY_AVAILABLE) {   // Check if memory type is available ram 
-            total += mmmt->len;
+            total += ((uint64_t)mmmt->len_high << 32) | mmmt->len_low;
         }
     }
 
     /* Print to screen */
+    puts ("MemOS: Welcome *** Total free memory: ");
+    put_uint64 (total);
+    puts ("MB\n");
 
     /* Loop through the memory map and display the values */
-    int i;
-    for(i = 0; i < mbd->mmap_length; 
-        i += sizeof(multiboot_memory_map_t)) 
-    {
-        multiboot_memory_map_t* mmmt = 
-            (multiboot_memory_map_t*) (mbd->mmap_addr + i);
-
-        printf("Start Addr: %x | Length: %x | Size: %x | Type: %d\n",
-            mmmt->addr, mmmt->len, mmmt->size, mmmt->type);
-
-        if(mmmt->type == MULTIBOOT_MEMORY_AVAILABLE) {
-            /* 
-             * Do something with this memory block!
-             * BE WARNED that some of memory shown as availiable is actually 
-             * actively being used by the kernel! You'll need to take that
-             * into account before writing to memory!
-             */
-        }
+    for(i = 0; i < mbd->mmap_length; i += sizeof(multiboot_memory_map_t)) {
+        multiboot_memory_map_t* mmmt = (multiboot_memory_map_t*) (mbd->mmap_addr + i);
+        /* 
+         * Do something with this memory block!
+         * BE WARNED that some of memory shown as availiable is actually 
+         * actively being used by the kernel! You'll need to take that
+         * into account before writing to memory!
+        */
+        uint64_t addr_start = ((uint64_t)mmmt->addr_high << 32) | mmmt->addr_low;
+        uint64_t length = ((uint64_t)mmmt->len_high << 32) | mmmt->len_low; 
+        uint64_t addr_stop = addr_start + length - 1; 
+        puts ("Address range [ 0x");
+        put_hex64 (addr_start);
+        putc (': 0x');
+        put_hex64 (addr_stop);
+        puts ("] status: Type ");
+        put_uint64 (mmmt->type);
+        putc ('\n');
     }
 }
