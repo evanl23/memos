@@ -2,7 +2,7 @@
 #include <stdint.h>     // for uint64_t
 
 /* Custom strlen since no external libraries */
-int my_strlen(char* text) {
+int my_strlen(const char* text) {
     int length = 0;
     while (text[length] != '\0') {
         length++;
@@ -32,7 +32,8 @@ void putc (unsigned char c) {
 
 /* print string to the screen */
 void puts (char *text) {
-    for (int i = 0; i < my_strlen ((const char*)text); i++) {
+    int i;
+    for (i = 0; i < my_strlen ((const char*)text); i++) {
         putc (text[i]);
     }
 }
@@ -54,7 +55,8 @@ void put_uint64(uint64_t num) {
 
 void put_hex64(uint64_t num) {
     char hex_digits[] = "0123456789ABCDEF";
-    for (int j = 60; j >= 0; j -= 4) {
+    int j;
+    for (j = 60; j >= 0; j -= 4) {
         putc(hex_digits[(num >> j) & 0xF]);
     }
 }
