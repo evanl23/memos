@@ -13,8 +13,8 @@ _start:
 
 real_start:
     /* Setup proper stack */
-    movl $stack_top, %esp
-    movl %esp, %ebp
+    # movl $stack_top, %esp
+    # movl %esp, %ebp
 
     /* pass arguments to _main */
     pushl %eax
