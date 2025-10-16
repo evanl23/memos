@@ -59,17 +59,7 @@ void put_uint64(uint64_t num) {
     
     if (high != 0) {
         put_uint32(high);
-        // Print low part with leading zeros if needed
-        char buf[11];
-        int k = 0;
-        uint32_t temp = low;
-        int i;
-        for (i = 0; i < 10; i++) {
-            buf[k++] = '0' + (temp % 10);
-            temp /= 10;
-            if (temp == 0 && i >= 8) break; // At least 9 digits for low part when high exists
-        }
-        while (k--) putc(buf[k]);
+        put_uint32(low);
     } else {
         put_uint32(low);
     }
@@ -99,7 +89,7 @@ void _main(multiboot_info_t* mbd, uint32_t magic)
     }
 
     /* Loop thorugh memory map accumulate total available mememory */
-    uint64_t total;
+    uint64_t total = 0;
     int i; 
     for (i = 0; i < mbd->mmap_length; i += sizeof(multiboot_memory_map_t)) {
         multiboot_memory_map_t* mmmt = (multiboot_memory_map_t *) (mbd->mmap_addr + i);
@@ -126,12 +116,12 @@ void _main(multiboot_info_t* mbd, uint32_t magic)
         uint64_t addr_start = ((uint64_t)mmmt->addr_high << 32) | mmmt->addr_low;
         uint64_t length = ((uint64_t)mmmt->len_high << 32) | mmmt->len_low; 
         uint64_t addr_stop = addr_start + length - 1; 
-        puts ("Address range [ 0x");
+        puts ("Address range [0x");
         put_hex64 (addr_start);
         puts (" : 0x");
         put_hex64 (addr_stop);
         puts ("] status: Type ");
-        put_uint64 (mmmt->type);
+        put_uint32 (mmmt->type);
         putc ('\n');
     }
 }
